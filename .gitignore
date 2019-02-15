@@ -1,0 +1,15 @@
+script-editor.pro.user
+*.autosave
+*.stash
+*.o
+script-editor.app*
+script-editor
+script-editor.cfg
+script-editor.log
+Makefile
+
+# Qt generated files
+ui_*.h
+moc_*.h
+moc_*.cpp
+qrc_*.cpp
