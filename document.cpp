@@ -4,26 +4,29 @@
 
 
 
-
-
-Document::Document(Project *project_, Theme theme_, QWidget *parent) : QPlainTextEdit(parent){
+Document::Document(Project *project_, Theme theme_, QWidget *parent) : QPlainTextEdit(parent), completer_(0) {
     this->project = project_;
     this->theme = theme_;
     QPalette pal = this->palette();
     pal.setColor(QPalette::Base, theme.backgroundColor); // background color
     pal.setColor(QPalette::Text, theme.plaintextColor); // text color
-        pal.setColor(QPalette::Highlight, theme.highlightColor);// highlight
-        pal.setColor(QPalette::HighlightedText, theme.highlightTextColor);// highlighted text
-        setPalette(pal);
+    pal.setColor(QPalette::Highlight, theme.highlightColor);// highlight
+    pal.setColor(QPalette::HighlightedText, theme.highlightTextColor);// highlighted text
+    setPalette(pal);
 
-        lineNumberArea = new LineNumberArea(this);
+    lineNumberArea = new LineNumberArea(this);
 
-        connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth()));
-        connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
-        //connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
+    connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth()));
+    connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
+    //connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
 
-        updateLineNumberAreaWidth();
-        //highlightCurrentLine();
+    //
+    QCompleter *completer = new QCompleter(project->keywords->keys(), this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    this->setCompleter(completer);
+
+    updateLineNumberAreaWidth();
+    //highlightCurrentLine();
 };
 
 int Document::lineNumberAreaWidth() {
@@ -60,6 +63,7 @@ void Document::resizeEvent(QResizeEvent *e) {
     lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth() + 1, cr.height()));
 }
 
+// TODO: update this to highlight the lineNumberArea only
 void Document::highlightCurrentLine() {
     QList<QTextEdit::ExtraSelection> extraSelections;
 
@@ -104,6 +108,36 @@ void Document::lineNumberAreaPaintEvent(QPaintEvent *event) {
     painter.drawLine(lineNumberArea->width() - 1, 0, lineNumberArea->width() - 1, lineNumberArea->height());
 }
 
+void Document::setCompleter(QCompleter *c) {
+    if (completer_)
+        QObject::disconnect(completer_, 0, this, 0);
+
+    completer_ = c;
+
+    if (!completer_)
+        return;
+
+    completer_->setWidget(this);
+    completer_->setCompletionMode(QCompleter::PopupCompletion);
+    completer_->setCaseSensitivity(Qt::CaseInsensitive);
+    QObject::connect(completer_, SIGNAL(activated(QString)),
+                     this, SLOT(insertCompletion(QString)));
+}
+
+void Document::insertCompletion(const QString& completion) {
+    if (completer_->widget() != this)
+        return;
+    QTextCursor tc = textCursor();
+    int extra = completion.length() - completer_->completionPrefix().length();
+    tc.movePosition(QTextCursor::Left);
+    tc.movePosition(QTextCursor::EndOfWord);
+    tc.insertText(completion.right(extra));
+    setTextCursor(tc);
+}
+
+QCompleter *Document::completer() const {
+    return completer_;
+}
 
 
 
@@ -143,11 +177,11 @@ Highlighter::Highlighter(Document *parent) : QSyntaxHighlighter(parent->document
     rule.format = numberFormat;
     highlightingRules.append(rule);
 
+    // macros / keywords
     keywordFormat.setForeground(theme.keywordColor);
     keywordFormat.setFontWeight(QFont::Bold);
-    QStringList keywordPatterns;
-    for (Project::Keyword &keyword : *parent->project->keywords) {
-        rule.pattern = QRegularExpression(QString("\\b%1\\b").arg(keyword.name));
+    for (const QString &keyword : parent->project->keywords->keys()) {
+        rule.pattern = QRegularExpression(QString("\\b%1\\b").arg(keyword));
         rule.format = keywordFormat;
         highlightingRules.append(rule);
     }

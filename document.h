@@ -6,6 +6,7 @@
 #include <QRegularExpression>
 
 #include <QPlainTextEdit>
+#include <QCompleter>
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QObject>
@@ -28,8 +29,13 @@ public:
 
     Theme theme;
 
+    QString filepath;
+    QSet<QString> labels;// to jump around for labels
+
     void lineNumberAreaPaintEvent(QPaintEvent *event);
+    void setCompleter(QCompleter *c);
     int lineNumberAreaWidth();
+    QCompleter *completer() const;
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -38,9 +44,11 @@ private slots:
     void updateLineNumberAreaWidth();
     void highlightCurrentLine();
     void updateLineNumberArea(const QRect &, int);
+    void insertCompletion(const QString &completion);
 
 private:
     QWidget *lineNumberArea;
+    QCompleter *completer_;
 
 };
 
@@ -68,8 +76,8 @@ private:
 
 
 
-class Highlighter : public QSyntaxHighlighter
-{
+class Highlighter : public QSyntaxHighlighter {
+
     Q_OBJECT
 
 public:
@@ -99,5 +107,15 @@ private:
     QTextCharFormat numberFormat;
     QTextCharFormat hexadecimalFormat;
 };
+
+
+/*
+class TabWidget : public QTabWidget {
+    //
+public:
+    TabWidget(QWidget *parent = 0) : QTabWidget(parent) {}
+
+};
+*/
 
 #endif // DOCUMENT_H

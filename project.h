@@ -16,12 +16,12 @@ public:
 
     struct Keyword {
         //
-        QString name;
         QString description;
         QStringList arguments;
     };
 
-    QVector<Keyword> *keywords = nullptr;
+    QMap<QString, Keyword> *keywords = nullptr;
+    // QMap<QString, > keyword to description and
 
     void loadProject(QString dir);
     QString loadTextFile(QString filename);

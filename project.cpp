@@ -8,7 +8,7 @@
 
 Project::Project() {
     //
-    keywords = new QVector<Keyword>;
+    keywords = new QMap<QString, Keyword>;
     // TODO: DELETE!!
     loadProject("../emerald");
 }
@@ -24,8 +24,8 @@ void Project::loadProject(QString dir) {
     loadKeywords();
 
     // TEST
-    for (auto key : *keywords)
-        qDebug() << key.name << key.description << key.arguments;
+    for (auto key : keywords->keys())
+        qDebug() << key << keywords->value(key).description << keywords->value(key).arguments;
 }
 
 QString Project::loadTextFile(QString filepath) {
@@ -67,6 +67,7 @@ void Project::loadKeywords() {
         QString name = match.captured("macro");
         QString desc = match.captured("desc").remove("@").trimmed();
         QString args = match.captured("args");
+        args.remove(QRegularExpression("@.*"));// remove comments captured in args
 
         QStringList arguments;
         QRegularExpression arg_re("(?<arg>[A-Za-z_]+)[:A-Za-z]*");
@@ -75,11 +76,12 @@ void Project::loadKeywords() {
         while (arg_iter.hasNext()) {
             QRegularExpressionMatch arg_match = arg_iter.next();
             QString arg = arg_match.captured("arg");
-            arguments.append(arg);
+            if (arg != "req")
+                arguments.append(arg);
         }
-        Keyword keyword = {name, desc, arguments};
+        Keyword keyword = {desc, arguments};
 
-        keywords->append(keyword);
+        keywords->insert(name, keyword);
     }
 }
 

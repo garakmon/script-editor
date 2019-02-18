@@ -28,8 +28,9 @@ private:
     Ui::MainWindow *ui;
 
     Project *project;
-    Document *editor;
-    Highlighter *highlighter;
+    QTabWidget *editor = nullptr;
+    //Document *editor;
+    Highlighter *highlighter;// do I need a highlighter for every single tab?
 
     void setupEditor();
     void setupFileMenu();
@@ -39,6 +40,8 @@ private slots:
     void on_actionNew_triggered();// new file
     void on_actionOpen_triggered();
     void on_actionOpen_Project_triggered();
+    void on_actionSave_triggered();
+    void on_actionSave_All_triggered();
     // new script action
     
 };
